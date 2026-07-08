@@ -1,36 +1,154 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 HackRadar
 
-## Getting Started
+HackRadar is an AI-powered hackathon discovery platform that helps students discover hackathons best suited to their skills. Users can upload their resume, extract technical skills, receive AI-based hackathon recommendations, save favorite hackathons, and apply directly through a clean and responsive interface.
 
-First, run the development server:
+---
+
+## 🌐 Live Demo
+
+🔗 https://hackradar-app.vercel.app
+
+---
+
+## ✨ Features
+
+- 🔐 Google Authentication using Firebase
+- 📄 Resume Upload
+- 🤖 AI Skill Extraction
+- 🎯 AI Match Score for every hackathon
+- ✅ Recommended Hackathons
+- 📚 Skills You Have
+- 📈 Skills You Need to Learn
+- ❤️ Save Favorite Hackathons
+- 🔎 Smart Search
+- 🎛️ Category Filters
+- 📊 Opportunity Dashboard
+- 👤 AI Profile
+- 🚀 Direct Apply Links
+- ☁️ Firebase Firestore Integration
+- 🌍 Fully Deployed on Vercel
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+- Next.js 16
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend & Database
+- Firebase Authentication
+- Cloud Firestore
+
+### Deployment
+- GitHub
+- Vercel
+
+---
+
+## 📷 Screenshots
+
+### Home Page
+
+*(Add a screenshot here)*
+
+### Resume Analysis
+
+*(Add a screenshot here)*
+
+### AI Match Score
+
+*(Add a screenshot here)*
+
+### Dashboard
+
+*(Add a screenshot here)*
+
+---
+
+## ⚙️ Installation
+
+Clone the repository
+
+```bash
+git clone https://github.com/kapoortanisha38-tech/hackradar-app.git
+```
+
+Move into the project
+
+```bash
+cd hackradar-app
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Build for production
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📁 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+ ├── components/
+ ├── data/
+ ├── utils/
+ ├── firebase.ts
+ ├── page.tsx
+ └── layout.tsx
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 💡 How It Works
 
-## Deploy on Vercel
+1. User signs in with Google.
+2. User uploads their resume.
+3. Skills are extracted from the resume.
+4. AI compares extracted skills with each hackathon's required skills.
+5. A personalized Match Score is generated.
+6. Users can search, filter, save, and apply to hackathons.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📈 Future Improvements
+
+- Calendar View
+- Email Deadline Reminders
+- AI Learning Roadmaps
+- Team Matching
+- Hackathon Detail Pages
+- Notifications
+
+---
+
+## 👩‍💻 Author
+
+**Tanisha Kapoor**
+
+B.Tech Computer Science Engineering (Artificial Intelligence)
+
+GitHub:
+https://github.com/kapoortanisha38-tech
+
+---
+
+## 📄 License
+
+This project is created for educational and portfolio purposes.
