@@ -7,9 +7,7 @@ type ResumeAnalyzerProps = {
   setResumeSkills: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-export default function ResumeAnalyzer({
-  setResumeSkills,
-}: ResumeAnalyzerProps) {
+export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps) {
   const [fileName, setFileName] = useState("");
   const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -24,23 +22,26 @@ export default function ResumeAnalyzer({
     setIsAnalyzing(true);
 
     try {
-      if (file.type !== "application/pdf") {
+      const isPdf =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+
+      if (!isPdf) {
         alert("For now, please upload a PDF resume.");
-        setIsAnalyzing(false);
         return;
       }
 
-     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/legacy/build/pdf.worker.mjs",
-  import.meta.url
-).toString();
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
       const arrayBuffer = await file.arrayBuffer();
 
       const pdf = await pdfjsLib.getDocument({
         data: arrayBuffer,
+        useWorkerFetch: false,
+        useSystemFonts: true,
       }).promise;
 
       let resumeText = "";
@@ -50,21 +51,27 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
         const textContent = await page.getTextContent();
 
         const pageText = textContent.items
-          .map((item: any) => item.str)
+          .map((item) => ("str" in item ? item.str : ""))
           .join(" ");
 
         resumeText += pageText + " ";
       }
 
+      if (!resumeText.trim()) {
+        alert("No readable text found in this PDF. Try uploading a text-based resume PDF.");
+        return;
+      }
+
       const skills = extractSkillsFromText(resumeText);
 
-setExtractedSkills(skills);
-setResumeSkills(skills);
+      setExtractedSkills(skills);
+      setResumeSkills(skills);
     } catch (error) {
-      console.error(error);
-      alert("Something went wrong while reading the resume.");
+      console.error("Resume reading error:", error);
+      alert("Something went wrong while reading the resume. Please try another PDF.");
     } finally {
       setIsAnalyzing(false);
+      event.target.value = "";
     }
   }
 
@@ -87,7 +94,7 @@ setResumeSkills(skills);
 
             <input
               type="file"
-              accept=".pdf"
+              accept="application/pdf,.pdf"
               onChange={handleResumeUpload}
               className="hidden"
             />
