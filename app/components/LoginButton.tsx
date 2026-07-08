@@ -1,6 +1,11 @@
 "use client";
 
-import { signInWithPopup, signOut, User } from "firebase/auth";
+import {
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  User,
+} from "firebase/auth";
 import { auth, provider } from "../firebase";
 
 type LoginButtonProps = {
@@ -10,9 +15,18 @@ type LoginButtonProps = {
 
 export default function LoginButton({ user, setUser }: LoginButtonProps) {
   async function handleLogin() {
-    const result = await signInWithPopup(auth, provider);
-    setUser(result.user);
+  const isMobile =
+    typeof window !== "undefined" &&
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    await signInWithRedirect(auth, provider);
+    return;
   }
+
+  const result = await signInWithPopup(auth, provider);
+  setUser(result.user);
+}
 
   async function handleLogout() {
     await signOut(auth);
