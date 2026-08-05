@@ -10,6 +10,9 @@ export interface Hackathon {
   tags: string[];
   requiredSkills: string[];
   applyLink: string;
+  description?: string;
+  isBeginnerFriendly?: boolean;
+  isStudentOnly?: boolean;
 }
 
 export const hackathons: Hackathon[] = [
@@ -22,10 +25,12 @@ export const hackathons: Hackathon[] = [
     prize: "$10,000",
     deadline: "15 July 2026",
     teamSize: "4 Members",
-    tags: ["AI", "ML", "GenAI"],
+    tags: ["AI", "ML", "GenAI", "Online"],
     requiredSkills: ["Python", "Machine Learning", "AI", "React"],
-    // AI Innovation Challenge
-applyLink: "https://developers.google.com/community"
+    applyLink: "https://developers.google.com/community",
+    description: "An online global AI challenge open to developers building innovative ML tools.",
+    isBeginnerFriendly: true,
+    isStudentOnly: false,
   },
   {
     id: 2,
@@ -36,10 +41,12 @@ applyLink: "https://developers.google.com/community"
     prize: "₹1,00,000",
     deadline: "30 July 2026",
     teamSize: "6 Members",
-    tags: ["Web", "IoT", "AI"],
+    tags: ["Web", "IoT", "AI", "Offline"],
     requiredSkills: ["React", "Firebase", "JavaScript", "Python"],
-    // Smart India Hackathon
-applyLink: "https://www.sih.gov.in/"
+    applyLink: "https://www.sih.gov.in/",
+    description: "Nationwide offline hackathon for college students solving real-world problems.",
+    isBeginnerFriendly: true,
+    isStudentOnly: true,
   },
   {
     id: 3,
@@ -50,10 +57,12 @@ applyLink: "https://www.sih.gov.in/"
     prize: "$100,000",
     deadline: "20 August 2026",
     teamSize: "3 Members",
-    tags: ["Cloud", "AI", "Web"],
+    tags: ["Cloud", "AI", "Web", "Online"],
     requiredSkills: ["Azure", "Python", "AI", "Cloud"],
-   // Microsoft Imagine Cup
-applyLink: "https://imaginecup.microsoft.com/"
+    applyLink: "https://imaginecup.microsoft.com/",
+    description: "Global online technology competition for student entrepreneurs.",
+    isBeginnerFriendly: false,
+    isStudentOnly: true,
   },
   {
     id: 4,
@@ -64,9 +73,11 @@ applyLink: "https://imaginecup.microsoft.com/"
     prize: "$5,000",
     deadline: "5 August 2026",
     teamSize: "5 Members",
-    tags: ["Open Source", "React", "Node"],
+    tags: ["Open Source", "React", "Node", "Online"],
     requiredSkills: ["React", "Node", "Git", "JavaScript"],
-    // Open Source Sprint
-applyLink: "https://github.com/events",
+    applyLink: "https://github.com/events",
+    description: "Collaborative online open-source sprint for web developers.",
+    isBeginnerFriendly: true,
+    isStudentOnly: false,
   },
 ];
