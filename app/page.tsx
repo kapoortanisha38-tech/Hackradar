@@ -23,7 +23,7 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [selectedTag, setSelectedTag] = useState("All");
   const [sortOrder, setSortOrder] = useState("none");
-  const [savedHackathons, setSavedHackathons] = useState<number[]>([]);
+ const [savedHackathons, setSavedHackathons] = useState<(string | number)[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [resumeSkills, setResumeSkills] = useState<string[]>([]);
 

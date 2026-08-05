@@ -82,26 +82,76 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
     }
   };
 
-  const filteredHackathons = hackathons.filter((hackathon) => {
-   const searchableText = [
-  hackathon.title,
-  hackathon.organizer,
-  hackathon.tags.join(" "),
-  hackathon.requiredSkills.join(" "),
-].join(" ").toLowerCase();
-    const matchesSearch = searchableText.includes(searchTerm.toLowerCase());
+  const filteredHackathons = hackathons.filter((hackathon: any) => {
+    const searchableText = [
+      hackathon.title,
+      hackathon.organizer,
+      hackathon.mode,
+      hackathon.description,
+      (hackathon.tags || []).join(" "),
+      (hackathon.requiredSkills || []).join(" "),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
 
-    const matchesFilter =
-      activeFilter === "All" ||
-      hackathon.tags.some((tag) =>
-        tag.toLowerCase().includes(activeFilter.toLowerCase())
-      ) ||
-      (activeFilter === "Prize ₹1L+" && hackathon.prize.includes("₹1,00,000"));
+    const matchesSearch = searchTerm
+      ? searchableText.includes(searchTerm.toLowerCase())
+      : true;
+
+    const tags = (hackathon.tags || []).map((t: string) => t.toLowerCase());
+    const mode = (hackathon.mode || "").toLowerCase();
+    const title = (hackathon.title || "").toLowerCase();
+    const description = (hackathon.description || "").toLowerCase();
+
+    let matchesFilter = activeFilter === "All";
+
+    if (activeFilter === "Online") {
+      matchesFilter =
+        mode.includes("online") ||
+        tags.some((t: string) => t.includes("online")) ||
+        title.includes("online") ||
+        description.includes("online");
+    } else if (activeFilter === "Offline") {
+      matchesFilter =
+        mode.includes("offline") ||
+        mode.includes("in-person") ||
+        tags.some((t: string) => t.includes("offline") || t.includes("in-person")) ||
+        title.includes("offline") ||
+        description.includes("offline");
+    } else if (activeFilter === "Beginner Friendly") {
+      matchesFilter =
+        Boolean(hackathon.isBeginnerFriendly) ||
+        tags.some(
+          (t: string) =>
+            t.includes("beginner") ||
+            t.includes("easy") ||
+            t.includes("novice")
+        ) ||
+        description.includes("beginner");
+    } else if (activeFilter === "Student Only") {
+      matchesFilter =
+        Boolean(hackathon.isStudentOnly) ||
+        tags.some((t: string) => t.includes("student") || t.includes("college")) ||
+        description.includes("student");
+    } else if (activeFilter === "Team") {
+      matchesFilter =
+        (hackathon.teamSize &&
+          hackathon.teamSize !== "1" &&
+          hackathon.teamSize.toLowerCase() !== "solo") ||
+        tags.some((t: string) => t.includes("team") || t.includes("group"));
+    } else if (activeFilter === "Prize ₹1L+") {
+      matchesFilter =
+        hackathon.prize?.includes("₹1,00,000") ||
+        hackathon.prize?.includes("1L") ||
+        hackathon.prize?.includes("1,00,000") ||
+        hackathon.prize?.includes("$");
+    }
 
     return matchesSearch && matchesFilter;
   });
 
-  const hackathonsWithScore = filteredHackathons.map((hackathon) => {
+  const hackathonsWithScore = filteredHackathons.map((hackathon: any) => {
     const match = calculateMatchScore(resumeSkills, hackathon.requiredSkills);
 
     return {
@@ -111,11 +161,11 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
   });
 
   const recommendedHackathons = hackathonsWithScore
-    .filter((hackathon) => hackathon.match.score >= 70)
-    .sort((a, b) => b.match.score - a.match.score);
+    .filter((hackathon: any) => hackathon.match.score >= 70)
+    .sort((a: any, b: any) => b.match.score - a.match.score);
 
   const exploreMoreHackathons = hackathonsWithScore.filter(
-    (hackathon) => hackathon.match.score < 70
+    (hackathon: any) => hackathon.match.score < 70
   );
 
   const renderHackathonCard = (hackathon: any) => (
@@ -164,7 +214,9 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
               </span>
             ))
           ) : (
-            <p className="text-xs text-gray-500">No matching skills found yet.</p>
+            <p className="text-xs text-gray-500">
+              No matching skills found yet.
+            </p>
           )}
         </div>
 
@@ -293,9 +345,9 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
           </div>
         </div>
 
-        {filteredHackathons.length === 0 && (
+      {filteredHackathons.length === 0 && (
           <p className="mt-8 text-center text-gray-400">
-            No hackathons found for "{searchTerm}".
+            No hackathons found for "{searchTerm.trim() ? searchTerm : activeFilter}".
           </p>
         )}
       </div>

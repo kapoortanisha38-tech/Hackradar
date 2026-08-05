@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/ingest-hackathons",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
