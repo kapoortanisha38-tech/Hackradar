@@ -1,258 +1,146 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
-import { getDaysLeft } from "../utils/getDaysLeft";
-import { calculateMatch } from "../utils/calculateMatch";
-import { getRecommendationReason } from "../utils/getRecommendationReason";
-
-type Hackathon = {
-  id: string | number;
-  title: string;
-  organizer: string;
-  prize: string;
-  deadline: string;
-  teamSize: string;
-  mode: string;
-  tags: string[];
-};
-
-const userSkills = [
-  "AI",
-  "ML",
-  "React",
-  "Next.js",
-  "Firebase",
-  "TypeScript",
-  "Python",
-];
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase";
+import { collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
+import { hackathons } from "../data/hackathons";
+import { calculateMatchScore } from "../utils/calculateMatchScore";
+import { calculateDaysLeft } from "../utils/calculateDaysLeft";
 
 type TrendingSectionProps = {
-  searchText: string;
-  selectedTag: string;
-  sortOrder: string;
-  savedHackathons: (string | number)[];
-  setSavedHackathons: (ids: (string | number)[]) => void;
+  resumeSkills: string[];
 };
 
-export default function TrendingSection({
-  searchText,
-  selectedTag,
-  sortOrder,
-  savedHackathons,
-  setSavedHackathons,
-}: TrendingSectionProps) {
-  const [hackathonsList, setHackathonsList] = useState<Hackathon[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+export default function TrendingSection({ resumeSkills }: TrendingSectionProps) {
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchHackathonsFromFirebase() {
-      try {
-        setLoading(true);
-        const hackathonsRef = collection(db, "hackathons");
-        const snapshot = await getDocs(hackathonsRef);
+    const loadFavorites = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
 
-        const fetchedHackathons: Hackathon[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Hackathon, "id">),
-        }));
+      const favoritesRef = collection(db, "users", user.uid, "favorites");
+      const snapshot = await getDocs(favoritesRef);
+      const savedTitles = snapshot.docs.map((doc) => doc.id);
+      setFavorites(savedTitles);
+    };
 
-        setHackathonsList(fetchedHackathons);
-      } catch (error) {
-        console.error("Error fetching hackathons from Firestore:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchHackathonsFromFirebase();
+    loadFavorites();
   }, []);
 
-  const filteredHackathons = hackathonsList
-    .filter((hackathon) => {
-      const matchesSearch =
-        hackathon.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-        hackathon.organizer?.toLowerCase().includes(searchText.toLowerCase()) ||
-        hackathon.tags?.some((tag) =>
-          tag.toLowerCase().includes(searchText.toLowerCase())
-        );
-
-      const matchesTag =
-        selectedTag === "All" || hackathon.tags?.includes(selectedTag);
-
-      return matchesSearch && matchesTag;
-    })
-    .sort((a, b) => {
-      if (sortOrder === "match") {
-        const matchA = calculateMatch(userSkills, a.tags || []).score;
-        const matchB = calculateMatch(userSkills, b.tags || []).score;
-        return matchB - matchA;
-      }
-
-      if (sortOrder === "deadline") {
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-      }
-
-      if (sortOrder === "prize") {
-        const prizeA = Number(a.prize?.replace(/[^0-9]/g, "")) || 0;
-        const prizeB = Number(b.prize?.replace(/[^0-9]/g, "")) || 0;
-        return prizeB - prizeA;
-      }
-
-      if (sortOrder === "team") {
-        const teamA = Number(a.teamSize?.replace(/[^0-9]/g, "")) || 0;
-        const teamB = Number(b.teamSize?.replace(/[^0-9]/g, "")) || 0;
-        return teamA - teamB;
-      }
-
-      return 0;
-    });
-
-  function toggleSave(id: string | number) {
-    if (savedHackathons.includes(id)) {
-      setSavedHackathons(savedHackathons.filter((savedId) => savedId !== id));
-    } else {
-      setSavedHackathons([...savedHackathons, id]);
+  const saveFavorite = async (hackathon: any) => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please sign in first!");
+      return;
     }
-  }
+
+    const favoriteRef = doc(db, "users", user.uid, "favorites", hackathon.title);
+
+    try {
+      if (favorites.includes(hackathon.title)) {
+        await deleteDoc(favoriteRef);
+        setFavorites((prev) => prev.filter((title) => title !== hackathon.title));
+        alert("Removed from favorites!");
+      } else {
+        await setDoc(favoriteRef, {
+          ...hackathon,
+          savedAt: new Date(),
+        });
+        setFavorites((prev) => [...prev, hackathon.title]);
+        alert("Hackathon added to favorites!");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong!");
+    }
+  };
 
   return (
-    <section className="border-t border-gray-800 bg-[#0B0E14] px-8 py-20 text-white">
+    <section className="bg-[#0B0E14] px-8 py-16 text-white border-t border-gray-800">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-4xl font-bold">Trending This Week</h2>
-
         <p className="mt-2 text-gray-400">
           Ranked by saves, applications, and AI relevance
         </p>
 
-        {loading ? (
-          <div className="mt-12 text-center text-cyan-400 font-semibold animate-pulse">
-            Fetching trending hackathons from database...
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-5 md:grid-cols-4">
-            {filteredHackathons.length > 0 ? (
-              filteredHackathons.map((item) => {
-                const match = calculateMatch(userSkills, item.tags || []);
+        <div className="mt-8 grid gap-6 md:grid-cols-4">
+          {hackathons.map((hackathon: any) => {
+            const match = calculateMatchScore(
+              resumeSkills,
+              hackathon.requiredSkills
+            );
 
-                const recommendation = getRecommendationReason({
-                  score: match.score,
-                  matchedSkills: match.matchedSkills,
-                  prize: item.prize,
-                  mode: item.mode,
-                });
-
-                return (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-gray-800 bg-[#11151D] p-5 transition hover:border-cyan-500"
-                  >
-                    <div className="mb-3 flex items-center justify-between">
-                      <button
-                        onClick={() => toggleSave(item.id)}
-                        className="text-2xl"
-                      >
-                        {savedHackathons.includes(item.id) ? "❤️" : "🤍"}
-                      </button>
-
-                      <div className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-300">
-                        🤖 {match.score}% Match
-                      </div>
-                    </div>
-
-                    <p className="text-sm font-bold text-amber-400">
-                      {item.organizer}
+            return (
+              <div
+                key={hackathon.title}
+                className="flex flex-col justify-between rounded-2xl border border-gray-800 bg-[#11151D] p-5 hover:border-cyan-400/40"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-wider text-amber-500 font-semibold">
+                      {hackathon.organizer}
                     </p>
+                    <span className="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 border border-cyan-400/20">
+                      🤖 {match.score}% Match
+                    </span>
+                  </div>
 
-                    <h3 className="mt-3 font-bold">{item.title}</h3>
+                  <h3 className="mt-3 text-lg font-bold">{hackathon.title}</h3>
 
-                    <div className="mt-4 flex justify-between text-sm text-gray-400">
-                      <span>{item.prize}</span>
-                      <span>📅 {item.deadline}</span>
-                    </div>
+                  <div className="mt-3 space-y-1.5 text-xs text-gray-400">
+                    <p>💰 <span className="text-white font-medium">{hackathon.prize}</span></p>
+                    <p>📅 {hackathon.deadline}</p>
+                    <p>⏰ <span className="text-amber-300">{calculateDaysLeft(hackathon.deadline)}</span></p>
+                    <p>👥 Team Size: {hackathon.teamSize}</p>
+                  </div>
 
-                    <div className="mt-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          getDaysLeft(item.deadline) === "Expired"
-                            ? "bg-red-900/30 text-red-300"
-                            : getDaysLeft(item.deadline) === "Last day"
-                            ? "bg-orange-900/30 text-orange-300"
-                            : "bg-yellow-900/30 text-yellow-300"
-                        }`}
-                      >
-                        ⏳ {getDaysLeft(item.deadline)}
-                      </span>
-                    </div>
+                  <div className="mt-4 rounded-xl border border-gray-800 bg-[#161B25] p-3 text-xs">
+                    <p className="font-semibold text-cyan-300">🧠 AI Recommendation</p>
+                    <p className="mt-1 font-bold text-white">
+                      {match.score >= 70 ? "Excellent Match" : "Low Match"}
+                    </p>
+                    <ul className="mt-2 space-y-1 text-gray-400">
+                      <li>✓ Matches your skills: {match.matchedSkills.join(", ") || "None"}</li>
+                      <li>✓ Easy to join because it is {hackathon.mode?.toLowerCase() || "online"}</li>
+                    </ul>
+                  </div>
 
-                    <div className="mt-2 text-sm text-gray-400">
-                      Team Size: {item.teamSize}
-                    </div>
-
-                    <div className="mt-4 rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-3">
-                      <p className="text-xs font-bold text-cyan-300">
-                        🧠 AI Recommendation
-                      </p>
-
-                      <p className="mt-2 text-sm font-semibold text-white">
-                        {recommendation.level}
-                      </p>
-
-                      <ul className="mt-2 space-y-1 text-xs text-gray-300">
-                        {recommendation.reasons.map((reason) => (
-                          <li key={reason}>✔ {reason}</li>
-                        ))}
-                      </ul>
-
-                      <p className="mt-2 text-xs text-gray-400">
-                        Confidence: {recommendation.confidence}
-                      </p>
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold text-gray-400">
-                        Matching Skills:
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {match.matchedSkills.length > 0 ? (
-                          match.matchedSkills.map((skill) => (
-                            <span
-                              key={skill}
-                              className="rounded-full bg-green-900/30 px-3 py-1 text-xs text-green-300"
-                            >
-                              ✔ {skill}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-gray-500">
-                            No direct skill match
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {item.tags?.map((tag) => (
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-gray-400">Matching Skills:</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {match.matchedSkills.map((skill: string) => (
                         <span
-                          key={tag}
-                          className="rounded-full bg-cyan-900/30 px-3 py-1 text-xs text-cyan-300"
+                          key={skill}
+                          className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs text-green-300"
                         >
-                          {tag}
+                          ✓ {skill}
                         </span>
                       ))}
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <p className="col-span-4 text-center text-gray-400">
-                No hackathons found in database.
-              </p>
-            )}
-          </div>
-        )}
+                </div>
+
+                {/* Footer with Apply Link & Favorite Button */}
+                <div className="mt-6 flex items-center justify-between border-t border-gray-800 pt-4">
+                  <button
+                    onClick={() => saveFavorite(hackathon)}
+                    className="text-2xl hover:scale-110 transition cursor-pointer"
+                  >
+                    {favorites.includes(hackathon.title) ? "❤️" : "🤍"}
+                  </button>
+
+                  <button
+                    onClick={() => window.open(hackathon.applyLink, "_blank")}
+                    className="font-semibold text-cyan-300 cursor-pointer hover:text-cyan-200 text-sm"
+                  >
+                    Apply →
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
