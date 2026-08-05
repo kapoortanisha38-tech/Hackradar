@@ -7,7 +7,9 @@ type ResumeAnalyzerProps = {
   setResumeSkills: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps) {
+export default function ResumeAnalyzer({
+  setResumeSkills,
+}: ResumeAnalyzerProps) {
   const [fileName, setFileName] = useState("");
   const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -23,7 +25,9 @@ export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps)
     setResumeSkills(skills);
   }
 
-  async function handleResumeUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleResumeUpload(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -38,27 +42,30 @@ export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps)
         file.name.toLowerCase().endsWith(".pdf");
 
       if (!isPdf) {
-        alert("For now, please upload a PDF resume.");
+        alert("Please upload a PDF resume.");
         return;
       }
 
       const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+      // IMPORTANT:
+      // Make sure this version matches package.json
+     pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
-      const arrayBuffer = await file.arrayBuffer();
+      const buffer = await file.arrayBuffer();
 
-      const pdf = await pdfjsLib.getDocument({
-        data: arrayBuffer,
-        useWorkerFetch: false,
-        useSystemFonts: true,
-      }).promise;
+     const loadingTask = pdfjsLib.getDocument({
+  data: new Uint8Array(buffer),
+ 
+});
 
+const pdf = await loadingTask.promise;
       let resumeText = "";
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
         const page = await pdf.getPage(pageNumber);
+
         const textContent = await page.getTextContent();
 
         const pageText = textContent.items
@@ -68,25 +75,35 @@ export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps)
         resumeText += pageText + " ";
       }
 
-      if (!resumeText.trim()) {
-        alert("No readable text found in this PDF. Please enter skills manually below.");
+      resumeText = resumeText.trim();
+
+      if (!resumeText) {
+        alert(
+          "No readable text was found in this PDF. It may be a scanned document. Please enter your skills manually."
+        );
         return;
       }
 
       const skills = extractSkillsFromText(resumeText);
 
       if (skills.length === 0) {
-        alert("Resume was read, but no matching skills were found. You can enter skills manually below.");
+        alert(
+          "Resume was read successfully, but no matching skills were detected.\n\nYou can still enter them manually below."
+        );
       }
 
       setExtractedSkills(skills);
       setResumeSkills(skills);
-   } catch (error) {
-  console.error("Resume reading error:", error);
-} finally {
-  setIsAnalyzing(false);
-  event.target.value = "";
-}
+    } catch (error) {
+      console.error("Resume reading error:", error);
+
+      alert(
+        "Unable to analyze this PDF on your device.\n\nTry another PDF or use the Manual Skills option."
+      );
+    } finally {
+      setIsAnalyzing(false);
+      event.target.value = "";
+    }
   }
 
   return (
@@ -102,13 +119,17 @@ export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps)
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-cyan-500/50 bg-cyan-500/5 px-6 py-10 text-center hover:bg-cyan-500/10">
             <span className="text-5xl">⬆️</span>
 
-            <span className="mt-4 text-lg font-semibold">Upload Resume</span>
+            <span className="mt-4 text-lg font-semibold">
+              Upload Resume
+            </span>
 
-            <span className="mt-2 text-sm text-gray-400">PDF file only</span>
+            <span className="mt-2 text-sm text-gray-400">
+              PDF file only
+            </span>
 
             <input
               type="file"
-              accept="application/pdf,.pdf"
+              accept=".pdf,application/pdf"
               onChange={handleResumeUpload}
               className="hidden"
             />
@@ -137,12 +158,17 @@ export default function ResumeAnalyzer({ setResumeSkills }: ResumeAnalyzerProps)
           {fileName && (
             <div className="mt-6 rounded-xl bg-[#0B0E14] p-4">
               <p className="text-sm text-gray-400">Uploaded File:</p>
-              <p className="mt-1 font-semibold text-cyan-300">{fileName}</p>
+
+              <p className="mt-1 font-semibold text-cyan-300">
+                {fileName}
+              </p>
             </div>
           )}
 
           {isAnalyzing && (
-            <p className="mt-6 text-cyan-300">Analyzing resume...</p>
+            <p className="mt-6 text-cyan-300">
+              🔍 Analyzing resume...
+            </p>
           )}
 
           {extractedSkills.length > 0 && (
