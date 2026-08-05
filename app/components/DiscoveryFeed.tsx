@@ -82,7 +82,7 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
     }
   };
 
-  const filteredHackathons = hackathons.filter((hackathon: any) => {
+const filteredHackathons = hackathons.filter((hackathon: any) => {
     const searchableText = [
       hackathon.title,
       hackathon.organizer,
@@ -103,6 +103,7 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
     const mode = (hackathon.mode || "").toLowerCase();
     const title = (hackathon.title || "").toLowerCase();
     const description = (hackathon.description || "").toLowerCase();
+    const fullContent = `${title} ${description} ${tags.join(" ")}`.toLowerCase();
 
     let matchesFilter = activeFilter === "All";
 
@@ -110,30 +111,29 @@ export default function DiscoveryFeed({ resumeSkills }: DiscoveryFeedProps) {
       matchesFilter =
         mode.includes("online") ||
         tags.some((t: string) => t.includes("online")) ||
-        title.includes("online") ||
-        description.includes("online");
+        title.includes("online");
     } else if (activeFilter === "Offline") {
       matchesFilter =
         mode.includes("offline") ||
         mode.includes("in-person") ||
         tags.some((t: string) => t.includes("offline") || t.includes("in-person")) ||
-        title.includes("offline") ||
-        description.includes("offline");
+        title.includes("offline");
     } else if (activeFilter === "Beginner Friendly") {
       matchesFilter =
         Boolean(hackathon.isBeginnerFriendly) ||
-        tags.some(
-          (t: string) =>
-            t.includes("beginner") ||
-            t.includes("easy") ||
-            t.includes("novice")
-        ) ||
-        description.includes("beginner");
+        fullContent.includes("beginner") ||
+        fullContent.includes("easy") ||
+        fullContent.includes("novice") ||
+        fullContent.includes("starter") ||
+        fullContent.includes("open to all");
     } else if (activeFilter === "Student Only") {
       matchesFilter =
         Boolean(hackathon.isStudentOnly) ||
-        tags.some((t: string) => t.includes("student") || t.includes("college")) ||
-        description.includes("student");
+        fullContent.includes("student") ||
+        fullContent.includes("college") ||
+        fullContent.includes("university") ||
+        fullContent.includes("sih") || // Smart India Hackathon
+        fullContent.includes("imagine cup"); // Imagine Cup
     } else if (activeFilter === "Team") {
       matchesFilter =
         (hackathon.teamSize &&
