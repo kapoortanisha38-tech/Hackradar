@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 import { getDaysLeft } from "../utils/getDaysLeft";
 import { calculateMatch } from "../utils/calculateMatch";
 import { getRecommendationReason } from "../utils/getRecommendationReason";
-import { hackathons as staticHackathons } from "../data/hackathons";
-
-// Replace with Firestore imports if fetching directly from Firebase
-// import { db } from "../firebase";
-// import { collection, getDocs } from "firebase/firestore";
 
 type Hackathon = {
-  id: number;
+  id: string | number;
   title: string;
   organizer: string;
   prize: string;
@@ -35,8 +32,8 @@ type TrendingSectionProps = {
   searchText: string;
   selectedTag: string;
   sortOrder: string;
-  savedHackathons: number[];
-  setSavedHackathons: (ids: number[]) => void;
+  savedHackathons: (string | number)[];
+  setSavedHackathons: (ids: (string | number)[]) => void;
 };
 
 export default function TrendingSection({
@@ -46,63 +43,50 @@ export default function TrendingSection({
   savedHackathons,
   setSavedHackathons,
 }: TrendingSectionProps) {
-  const [allHackathons, setAllHackathons] = useState<Hackathon[]>([]);
+  const [hackathonsList, setHackathonsList] = useState<Hackathon[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch dynamic hackathons (e.g. from Firebase or an API route)
   useEffect(() => {
-    async function fetchHackathons() {
+    async function fetchHackathonsFromFirebase() {
       try {
         setLoading(true);
-        
-        // Option A: API Endpoint Fetch
-        const res = await fetch("/api/hackathons");
-        if (res.ok) {
-          const data = await res.json();
-          setAllHackathons(data);
-        } else {
-          // Fallback to static dataset if API route isn't set up yet
-          setAllHackathons(staticHackathons);
-        }
+        const hackathonsRef = collection(db, "hackathons");
+        const snapshot = await getDocs(hackathonsRef);
 
-        /* 
-        // Option B: Direct Firebase Firestore Fetch
-        const querySnapshot = await getDocs(collection(db, "hackathons"));
-        const fetchedData: Hackathon[] = querySnapshot.docs.map((doc) => ({
-          id: doc.id as unknown as number,
-          ...doc.data(),
-        })) as Hackathon[];
-        setAllHackathons(fetchedData);
-        */
-      } catch (err) {
-        console.error("Failed to load live hackathons, using static fallback:", err);
-        setAllHackathons(staticHackathons);
+        const fetchedHackathons: Hackathon[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Hackathon, "id">),
+        }));
+
+        setHackathonsList(fetchedHackathons);
+      } catch (error) {
+        console.error("Error fetching hackathons from Firestore:", error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchHackathons();
+    fetchHackathonsFromFirebase();
   }, []);
 
-  const filteredHackathons = allHackathons
+  const filteredHackathons = hackathonsList
     .filter((hackathon) => {
       const matchesSearch =
-        hackathon.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        hackathon.organizer.toLowerCase().includes(searchText.toLowerCase()) ||
-        hackathon.tags.some((tag) =>
+        hackathon.title?.toLowerCase().includes(searchText.toLowerCase()) ||
+        hackathon.organizer?.toLowerCase().includes(searchText.toLowerCase()) ||
+        hackathon.tags?.some((tag) =>
           tag.toLowerCase().includes(searchText.toLowerCase())
         );
 
       const matchesTag =
-        selectedTag === "All" || hackathon.tags.includes(selectedTag);
+        selectedTag === "All" || hackathon.tags?.includes(selectedTag);
 
       return matchesSearch && matchesTag;
     })
     .sort((a, b) => {
       if (sortOrder === "match") {
-        const matchA = calculateMatch(userSkills, a.tags).score;
-        const matchB = calculateMatch(userSkills, b.tags).score;
+        const matchA = calculateMatch(userSkills, a.tags || []).score;
+        const matchB = calculateMatch(userSkills, b.tags || []).score;
         return matchB - matchA;
       }
 
@@ -111,21 +95,21 @@ export default function TrendingSection({
       }
 
       if (sortOrder === "prize") {
-        const prizeA = Number(a.prize.replace(/[^0-9]/g, "")) || 0;
-        const prizeB = Number(b.prize.replace(/[^0-9]/g, "")) || 0;
+        const prizeA = Number(a.prize?.replace(/[^0-9]/g, "")) || 0;
+        const prizeB = Number(b.prize?.replace(/[^0-9]/g, "")) || 0;
         return prizeB - prizeA;
       }
 
       if (sortOrder === "team") {
-        const teamA = Number(a.teamSize.replace(/[^0-9]/g, "")) || 0;
-        const teamB = Number(b.teamSize.replace(/[^0-9]/g, "")) || 0;
+        const teamA = Number(a.teamSize?.replace(/[^0-9]/g, "")) || 0;
+        const teamB = Number(b.teamSize?.replace(/[^0-9]/g, "")) || 0;
         return teamA - teamB;
       }
 
       return 0;
     });
 
-  function toggleSave(id: number) {
+  function toggleSave(id: string | number) {
     if (savedHackathons.includes(id)) {
       setSavedHackathons(savedHackathons.filter((savedId) => savedId !== id));
     } else {
@@ -143,14 +127,14 @@ export default function TrendingSection({
         </p>
 
         {loading ? (
-          <div className="mt-8 text-center text-cyan-400 font-semibold animate-pulse">
-            Loading trending hackathons...
+          <div className="mt-12 text-center text-cyan-400 font-semibold animate-pulse">
+            Fetching trending hackathons from database...
           </div>
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-4">
             {filteredHackathons.length > 0 ? (
               filteredHackathons.map((item) => {
-                const match = calculateMatch(userSkills, item.tags);
+                const match = calculateMatch(userSkills, item.tags || []);
 
                 const recommendation = getRecommendationReason({
                   score: match.score,
@@ -250,7 +234,7 @@ export default function TrendingSection({
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
+                      {item.tags?.map((tag) => (
                         <span
                           key={tag}
                           className="rounded-full bg-cyan-900/30 px-3 py-1 text-xs text-cyan-300"
@@ -264,7 +248,7 @@ export default function TrendingSection({
               })
             ) : (
               <p className="col-span-4 text-center text-gray-400">
-                No hackathons found.
+                No hackathons found in database.
               </p>
             )}
           </div>
