@@ -8,10 +8,22 @@ import { calculateMatchScore } from "../utils/calculateMatchScore";
 import { calculateDaysLeft } from "../utils/calculateDaysLeft";
 
 type TrendingSectionProps = {
-  resumeSkills: string[];
+  resumeSkills?: string[];
+  searchText?: string;
+  selectedTag?: string;
+  sortOrder?: string;
+  savedHackathons?: (string | number)[];
+  setSavedHackathons?: any;
 };
 
-export default function TrendingSection({ resumeSkills }: TrendingSectionProps) {
+export default function TrendingSection({
+  resumeSkills = [],
+  searchText = "",
+  selectedTag = "",
+  sortOrder = "",
+  savedHackathons,
+  setSavedHackathons,
+}: TrendingSectionProps) {
   const [favorites, setFavorites] = useState<string[]>([]);
 
   useEffect(() => {
@@ -68,7 +80,7 @@ export default function TrendingSection({ resumeSkills }: TrendingSectionProps) 
           {hackathons.map((hackathon: any) => {
             const match = calculateMatchScore(
               resumeSkills,
-              hackathon.requiredSkills
+              hackathon.requiredSkills || []
             );
 
             return (
@@ -121,7 +133,6 @@ export default function TrendingSection({ resumeSkills }: TrendingSectionProps) 
                   </div>
                 </div>
 
-                {/* Footer with Apply Link & Favorite Button */}
                 <div className="mt-6 flex items-center justify-between border-t border-gray-800 pt-4">
                   <button
                     onClick={() => saveFavorite(hackathon)}
